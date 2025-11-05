@@ -1,8 +1,12 @@
-import crypto from 'crypto';
+﻿import crypto from "crypto";
 
-/** Vérifie une signature HMAC simple (EL10). */
 export function verifyHmac(payload: string, signatureHex: string, secret: string): boolean {
-  const digest = crypto.createHmac('sha256', secret).update(payload, 'utf8').digest('hex');
-  // Comparaison sûre (temps constant)
-  return crypto.timingSafeEqual(Buffer.from(digest, 'hex'), Buffer.from(signatureHex, 'hex'));
+  try {
+    const expected = crypto.createHmac("sha256", secret).update(payload, "utf8").digest(); // Buffer (32o)
+    const actual = Buffer.from(String(signatureHex).trim(), "hex");
+    if (actual.length !== expected.length) return false; // évite RangeError
+    return crypto.timingSafeEqual(expected, actual);
+  } catch {
+    return false;
+  }
 }
