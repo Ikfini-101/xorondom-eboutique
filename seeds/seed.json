@@ -1,0 +1,15 @@
+{
+  "products": [
+    {
+      "sku": "SKU001",
+      "name": "Produit Demo",
+      "price": 0
+    }
+  ],
+  "cart": [
+    {
+      "sku": "SKU001",
+      "qty": 1
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+meta:
+  project_id: "Xorondom-EBoutique"
+  gate: "B"
+  date: "2025-11-04"
+  language_level: "EL10"
+  source: "TDR EBoutique PDF"
+scope:
+  capabilities:
+    - id: "CAP-CATALOGUE"
+      name: "Catalogue & Fiches produit"
+      priority: "P0"
+      description: "Gestion produits, fiches, images, variations, recherche."
+    - id: "CAP-CHECKOUT"
+      name: "Panier & Commande"
+      priority: "P0"
+      description: "Panier, récapitulatif, création de commande (cree)."
+    - id: "CAP-PAYMENTS"
+      name: "Paiements (Mobile Money & Cartes)"
+      priority: "P0"
+      description: "Intents, 3DS, redirections, webhooks, idempotence."
+    - id: "CAP-NOTIFS"
+      name: "Notifications (Email/SMS)"
+      priority: "P0"
+      description: "Envoi aux étapes clés."
+    - id: "CAP-I18N"
+      name: "Multilingue & RTL"
+      priority: "P0"
+      description: "FR/AR/EN, RTL."
+    - id: "CAP-A11Y"
+      name: "Accessibilité (WCAG 2.1 AA)"
+      priority: "P0"
+      description: "Contrastes, clavier, alt-text, structure."
+    - id: "CAP-SEO-PERF"
+      name: "SEO & Performance (PWA)"
+      priority: "P0"
+      description: "PWA et SEO."
+    - id: "CAP-ADMIN"
+      name: "Back-office catalogue/commandes"
+      priority: "P1"
+      description: "Gérer produits, commandes, paramètres."
+    - id: "CAP-ANALYTICS"
+      name: "Statistiques & Tableaux de bord"
+      priority: "P1"
+      description: "Tableaux et suivis non monétaires."
+    - id: "CAP-EXT"
+      name: "Extensions (ebooks/DRM, 3D/AR, avis, abonnements)"
+      priority: "P2"
+      description: "Fonctionnalités avancées."
+personas:
+  - id: "PER-DONATEUR"
+    description: "Visiteur/Supporter (achats/contributions)"
+  - id: "PER-CHERCHEUR"
+    description: "Chercheur/Étudiant (consultation de contenus)"
+  - id: "PER-DIASPORA"
+    description: "Grand public/diaspora"
+  - id: "PER-ADMIN"
+    description: "Administration catalogue/commandes"
+  - id: "PER-FINANCE"
+    description: "Gestion/rapprochements non monétaires"
+non_functional:
+  accessibility: "WCAG 2.1 AA (contrastes, clavier, alt, structure)"
+  i18n: "FR/AR/EN, RTL support complet"
+  security:
+    - "TLS 1.3"
+    - "Webhooks HMAC"
+    - "3D Secure pour cartes"
+    - "RGPD/Loi SN"
+  performance: "PWA, LCP<=2.5s, INP<=200ms, CLS<=0.1"
+  seo: "Meta, URLs parlantes, sitemap, Schema.org, Open Graph"
+  observability: "Logs structurés, événements clés (payment.succeeded, order.paid)"
+stories:
+  - id: "Xorondom-US-001"
+    capability_id: "CAP-PAYMENTS"
+    as_a: "Donateur/Supporter"
+    i_want: "payer en Mobile Money"
+    so_that: "je reçois une confirmation claire"
+    acceptance_gherkin: |
+      Feature: Paiement Mobile Money
+        Scenario: Paiement reussi par Mobile Money
+          Given un panier valide
+          When je paie via Mobile Money
+          Then je vois une page de confirmation avec un numero de commande
+          And je recois un email/SMS de confirmation
+  - id: "Xorondom-US-002"
+    capability_id: "CAP-PAYMENTS"
+    as_a: "Donateur/Supporter"
+    i_want: "payer par carte avec 3D Secure"
+    so_that: "je suis protégé et j’ai un reçu"
+    acceptance_gherkin: |
+      Feature: Paiement Carte (3DS)
+        Scenario: Paiement reussi avec 3DS
+          Given un panier valide
+          When je paie par carte avec 3D Secure
+          Then le paiement est valide et un reçu est généré
+          And je recois une notification
+  - id: "Xorondom-US-003"
+    capability_id: "CAP-CHECKOUT"
+    as_a: "Donateur/Supporter"
+    i_want: "voir le récapitulatif avant de valider"
+    so_that: "je confirme en confiance"
+    acceptance_gherkin: |
+      Feature: Checkout
+        Scenario: Validation du panier
+          Given des articles dans mon panier
+          When je valide la commande
+          Then la commande est créée en statut 'cree'
+  - id: "Xorondom-US-004"
+    capability_id: "CAP-NOTIFS"
+    as_a: "Systeme"
+    i_want: "envoyer des notifications à chaque étape clé"
+    so_that: "l’utilisateur est informé"
+    acceptance_gherkin: |
+      Feature: Notifications
+        Scenario: Notification post-paiement
+          Given un paiement confirme
+          When l’état commande passe a 'payee'
+          Then un email/SMS est envoyé
+  - id: "Xorondom-US-005"
+    capability_id: "CAP-I18N"
+    as_a: "Donateur/Supporter arabophone"
+    i_want: "une interface RTL claire"
+    so_that: "je navigue sans friction"
+    acceptance_gherkin: |
+      Feature: i18n RTL
+        Scenario: Passage en AR
+          Given la langue AR
+          When j’affiche la page checkout
+          Then la mise en page est RTL et les libelles sont lisibles
+rules_and_mappings:
+  priorities: "Must→P0, Should→P1, Could→P2 (tirées du TDR)"
+  glossary_terms: ["Mobile Money", "3D Secure", "Webhook HMAC", "PWA", "RTL", "WCAG"]
+  integration_notes: ["SSO (si mentionné dans TDR)", "Recherche interne", "Design system commun"]
+  dont_include: ["budget", "coûts", "montants", "KPI monétaires"]
+validation:
+  yaml_is_valid: true
+  extraction_from_pdf_ok: True
+  no_external_data: true
+  unresolved_todos: "TODO si des infos manquent dans TDR"

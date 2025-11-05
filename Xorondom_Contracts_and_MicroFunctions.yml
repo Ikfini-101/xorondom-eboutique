@@ -1,0 +1,223 @@
+meta:
+  project_id: Xorondom-EBoutique
+  generated_from: PRD_Xorondom_B.yml
+  date: '2025-11-04'
+  language_level: EL10
+  notes:
+  - 'Document unique: contrats minimum (OpenAPI, AsyncAPI) + micro-fonctionnalites.'
+  - Aucun budget ni detail d'argent.
+  - 'Conforme au perimetre: Checkout, Paiements (Mobile Money & Cartes/3DS), Notifications,
+    i18n/RTL, A11Y AA, SEO/PWA.'
+contracts:
+  openapi:
+    openapi: 3.0.3
+    info:
+      title: Xorondom Payments API
+      version: '0.1'
+    servers:
+    - url: https://api.example.com
+    paths:
+      /checkout/validate:
+        post:
+          summary: Valider le panier et creer la commande
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                    customer_id:
+                      type: string
+                  required:
+                  - items
+          responses:
+            '201':
+              description: Commande creee
+      /orders:
+        post:
+          summary: Creer une commande 'cree'
+          responses:
+            '201':
+              description: cree
+      /orders/{id}:
+        get:
+          summary: Obtenir une commande
+          parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: string
+          responses:
+            '200':
+              description: OK
+      /orders/{id}/status:
+        post:
+          summary: Mettre a jour le statut commande
+          parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: string
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                  required:
+                  - status
+          responses:
+            '200':
+              description: maj OK
+      /payments:
+        post:
+          summary: Creer un intent de paiement
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    order_id:
+                      type: string
+                    method:
+                      type: string
+                      enum:
+                      - mobile_money
+                      - card
+                  required:
+                  - order_id
+                  - method
+          responses:
+            '201':
+              description: intent cree
+      /webhooks/payments:
+        post:
+          summary: Recevoir webhook de paiement (HMAC)
+          responses:
+            '200':
+              description: recu
+      /notify/email:
+        post:
+          summary: Envoyer un email de confirmation
+          responses:
+            '202':
+              description: queued
+      /notify/sms:
+        post:
+          summary: Envoyer un SMS de confirmation
+          responses:
+            '202':
+              description: queued
+  asyncapi:
+    asyncapi: 2.6.0
+    info:
+      title: Xorondom Payments Events
+      version: '0.1'
+    channels:
+      payment.intent.created:
+        publish:
+          message:
+            name: PaymentIntentCreated
+      payment.succeeded:
+        publish:
+          message:
+            name: PaymentSucceeded
+      payment.failed:
+        publish:
+          message:
+            name: PaymentFailed
+      order.paid:
+        publish:
+          message:
+            name: OrderPaid
+      notification.sent:
+        publish:
+          message:
+            name: NotificationSent
+micro_functions:
+- id: Xorondom-MF-001
+  name: Create Order
+  inputs:
+    items: array
+    customer_id: string
+  outputs:
+    order_id: string
+    status: cree
+  invariants:
+  - total >= 0
+  - status in ['cree','payee']
+  tests_min:
+  - items:
+    - sku: X
+      qty: 1
+    ok: true
+- id: Xorondom-MF-002
+  name: Create Payment Intent
+  inputs:
+    order_id: string
+    method: string
+  outputs:
+    payment_intent_id: string
+    gateway_ref: string
+  invariants:
+  - order exists
+  - method in ['mobile_money','card']
+  tests_min:
+  - order_id: abc
+    method: mobile_money
+    ok: true
+- id: Xorondom-MF-003
+  name: Verify Webhook HMAC + Idempotence
+  inputs:
+    headers: object
+    body: object
+  outputs:
+    verified: boolean
+    payment_status: string
+  invariants:
+  - reject if bad signature
+  - no double-processing (idempotence)
+  tests_min:
+  - sig: valid
+    ok: true
+  - sig: invalid
+    ok: false
+- id: Xorondom-MF-004
+  name: Update Order Status + Generate Receipt
+  inputs:
+    order_id: string
+    payment_status: string
+  outputs:
+    order_status: string
+    receipt_id: string
+  invariants:
+  - if payment_status='succeeded' => order_status='payee'
+  tests_min:
+  - ps: succeeded
+    expect_order_status: payee
+- id: Xorondom-MF-005
+  name: Send Notifications
+  inputs:
+    order_id: string
+    channels: array
+  outputs:
+    queued: boolean
+  invariants:
+  - channels subset of ['email','sms']
+  tests_min:
+  - channels:
+    - email
+    - sms
+    ok: true
